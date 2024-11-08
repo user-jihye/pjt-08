@@ -1,3 +1,5 @@
+from multiprocessing import context
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import (
@@ -7,6 +9,7 @@ from django.views.decorators.http import (
 )
 from .models import Review, Comment
 from .forms import ReviewForm, CommentForm
+from django.http import JsonResponse
 
 
 @require_safe
@@ -68,4 +71,15 @@ def create_comment(request, review_pk):
 
 @login_required
 def like(request, review_pk):
-    pass
+    review = Review.objects.get(pk=review_pk)
+    if request.user in review.like_users.all():
+        review.like_users.remove(request.user)
+        is_liked = False
+    else:
+        review.like_users.add(request.user)
+        is_liked = True
+    context = {
+        'is_liked': is_liked,
+        'like_users_count': review.like_users.count()
+    }
+    return JsonResponse(context)
